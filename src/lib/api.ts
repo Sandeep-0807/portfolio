@@ -303,6 +303,13 @@ function parseSupabaseAdminPath(path: string): { table: string; id: string | nul
 async function supabaseApiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!supabase) throw new Error("Supabase is not configured");
 
+  const requireRecord = (value: unknown): Record<string, unknown> => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      throw new Error("Invalid request body");
+    }
+    return value as Record<string, unknown>;
+  };
+
   const method = normalizeMethod(options);
 
   // Auth routes
@@ -342,15 +349,15 @@ async function supabaseApiFetch<T>(path: string, options: RequestInit = {}): Pro
     }
 
     if (method === "POST" && !id) {
-      const body = parseJsonBody(options);
-      const { data, error } = await supabase.from(table).insert(body as any).select("*").maybeSingle();
+      const body = requireRecord(parseJsonBody(options));
+      const { data, error } = await supabase.from(table).insert(body).select("*").maybeSingle();
       if (error) throw new Error(error.message);
       return data as unknown as T;
     }
 
     if ((method === "PUT" || method === "PATCH") && id) {
-      const body = parseJsonBody(options);
-      const { data, error } = await supabase.from(table).update(body as any).eq("id", id).select("*").maybeSingle();
+      const body = requireRecord(parseJsonBody(options));
+      const { data, error } = await supabase.from(table).update(body).eq("id", id).select("*").maybeSingle();
       if (error) throw new Error(error.message);
       return data as unknown as T;
     }
