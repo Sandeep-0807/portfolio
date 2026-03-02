@@ -163,6 +163,36 @@ values ('<AUTH_USER_UUID_HERE>', 'admin');
 
 When Supabase env vars are set, the frontend uses Supabase directly for `/api/public/*`, `/api/admin/*`, and `/api/auth/*`.
 
+### Migrating Offline Admin data to Supabase
+
+If you previously added Certificates/Projects in **Offline Admin** mode, that data is stored only in your browser (localStorage). To make it appear on the deployed (Supabase-backed) site, import it into Supabase once.
+
+#### 1) Export from the browser (where you entered the data)
+
+1. Open your site on the same browser/profile where you entered Admin data.
+2. Open DevTools → **Console**.
+3. Run:
+
+```js
+copy(localStorage.getItem("portfolio_local_db_v1"))
+```
+
+4. Paste into a new file named `offline-export.json` in your project root.
+
+#### 2) Import into Supabase (run locally)
+
+PowerShell example (from the project root):
+
+```powershell
+$env:VITE_SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
+$env:VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
+$env:SUPABASE_ADMIN_EMAIL="your-admin-email"
+$env:SUPABASE_ADMIN_PASSWORD="your-admin-password"
+node scripts/import-offline-to-supabase.mjs offline-export.json
+```
+
+If the command prints `Import complete.`, refresh your deployed site.
+
 ## Deployment
 
 This site can be deployed to any static hosting service:
