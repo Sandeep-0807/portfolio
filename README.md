@@ -132,6 +132,37 @@ npm run create-admin
 
 Dev proxy is configured so frontend calls to `/api/*` go to the API.
 
+## Offline Admin (no DB/server)
+
+If you only want Admin editing on your own laptop (no cloud persistence), you can run the app without MySQL and without the API.
+
+- Set `VITE_OFFLINE_ADMIN=1` in your `.env`
+- (Optional) Set `VITE_LOCAL_ADMIN_PASSWORD` to require a password on the Admin Login screen
+- Run only the frontend: `npm run dev`
+
+In this mode, all Admin/public data is stored in your browser localStorage (same device/browser only). It is not secure and should not be enabled for public deployments.
+
+## Supabase (recommended)
+
+To make the deployed site editable (Admin saves data for everyone) without running the MySQL API server, you can switch to Supabase (Postgres + Auth + Storage).
+
+1) Create a Supabase project
+2) Run the SQL migrations in [supabase/migrations](supabase/migrations) (via Supabase SQL editor or Supabase CLI)
+3) Create an admin user in Supabase Auth (email/password)
+4) Grant admin role by inserting into `public.user_roles` (SQL editor):
+
+```sql
+insert into public.user_roles (user_id, role)
+values ('<AUTH_USER_UUID_HERE>', 'admin');
+```
+
+5) Create a Storage bucket named `uploads` (or set `VITE_SUPABASE_STORAGE_BUCKET`)
+6) Set these env vars in Vercel and redeploy:
+	- `VITE_SUPABASE_URL`
+	- `VITE_SUPABASE_ANON_KEY`
+
+When Supabase env vars are set, the frontend uses Supabase directly for `/api/public/*`, `/api/admin/*`, and `/api/auth/*`.
+
 ## Deployment
 
 This site can be deployed to any static hosting service:

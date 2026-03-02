@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { apiFetch, getAuthToken, setAuthToken } from "@/lib/api";
+import { isSupabaseEnabled, supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
   user: { id: string; email: string; role: "admin" | "user" } | null;
@@ -57,6 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (isSupabaseEnabled && supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // ignore
+      }
+    }
     setAuthToken(null);
     setUser(null);
     setIsAdmin(false);
