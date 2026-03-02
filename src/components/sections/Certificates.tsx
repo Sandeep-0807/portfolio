@@ -225,8 +225,7 @@ const Certificates = () => {
                   <iframe
                     title={viewer?.title || "Certificate"}
                     src={`${viewerUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                    className="w-full h-full rounded-md"
-                    style={{ border: 0 }}
+                    className="w-full h-full rounded-md border-0"
                     // best-effort: avoid scrollbars in some browsers
                     scrolling="no"
                   />
@@ -264,10 +263,12 @@ const Certificates = () => {
                           return Number.isFinite(scale) && scale > 0 ? Math.min(scale, 2) : 1;
                         })()}
                         onLoadSuccess={(page) => {
-                          // @ts-expect-error react-pdf page type exposes originalWidth/originalHeight at runtime
-                          const w = Number(page?.originalWidth);
-                          // @ts-expect-error react-pdf page type exposes originalWidth/originalHeight at runtime
-                          const h = Number(page?.originalHeight);
+                          const sizedPage = page as unknown as {
+                            originalWidth?: unknown;
+                            originalHeight?: unknown;
+                          };
+                          const w = Number(sizedPage.originalWidth);
+                          const h = Number(sizedPage.originalHeight);
                           if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) setPageSize({ w, h });
                         }}
                         renderTextLayer={false}

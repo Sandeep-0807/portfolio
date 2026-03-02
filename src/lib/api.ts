@@ -122,11 +122,13 @@ function normalizeMethod(options: RequestInit) {
   return (options.method || "GET").toUpperCase();
 }
 
-function getTableKeyFromAdminPath(path: string): keyof LocalDb | null {
+type LocalDbTableKey = Exclude<keyof LocalDb, "version">;
+
+function getTableKeyFromAdminPath(path: string): LocalDbTableKey | null {
   const m = path.match(/^\/api\/admin\/([a-z_]+)(?:\/([^/?#]+))?$/i);
   if (!m) return null;
   const table = m[1].toLowerCase();
-  const allow: Array<keyof LocalDb> = [
+  const allow: ReadonlyArray<LocalDbTableKey> = [
     "about_content",
     "profile_content",
     "resume_content",
@@ -137,7 +139,7 @@ function getTableKeyFromAdminPath(path: string): keyof LocalDb | null {
     "projects",
     "certificates",
   ];
-  return (allow as string[]).includes(table) ? (table as keyof LocalDb) : null;
+  return (allow as readonly string[]).includes(table) ? (table as LocalDbTableKey) : null;
 }
 
 function getIdFromAdminPath(path: string): string | null {
