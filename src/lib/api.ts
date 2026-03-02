@@ -20,6 +20,37 @@ const SUPABASE_STORAGE_BUCKET = ((import.meta.env.VITE_SUPABASE_STORAGE_BUCKET a
 
 const API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
 
+function isProbablyDeployedHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === "localhost" || host === "127.0.0.1") return false;
+  if (host.endsWith(".local")) return false;
+  if (host === "::1") return false;
+  return true;
+}
+
+function backendConfigHint(): string {
+  const parts: string[] = [];
+  parts.push("Backend not configured");
+  parts.push("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel (recommended)");
+  parts.push("or set VITE_API_BASE to your running API server URL");
+  return parts.join(". ") + ".";
+}
+
+function assertBackendConfiguredForApi(path: string) {
+  if (!path.startsWith("/api/")) return;
+  if (OFFLINE_ADMIN) return;
+  if (isSupabaseEnabled) return;
+
+  const baseFromEnv = API_BASE?.trim();
+  if (baseFromEnv) return;
+
+  // In a deployed/static host (e.g. Vercel), `/api/*` will typically 404 (HTML).
+  // Fail early with a clear message instead of a confusing JSON/HTML parse error.
+  if (typeof window !== "undefined" && isProbablyDeployedHost(window.location.hostname)) {
+    throw new Error(backendConfigHint());
+  }
+}
+
 type LocalDb = {
   version: 1;
   about_content: unknown[];
@@ -491,6 +522,8 @@ export function setAuthToken(token: string | null) {
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  assertBackendConfiguredForApi(path);
+
   if (OFFLINE_ADMIN && path.startsWith("/api/")) {
     return Promise.resolve(localApiFetch<T>(path, options));
   }
@@ -524,6 +557,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 }
 
 export async function apiUpload<T>(path: string, formData: FormData, options: Omit<RequestInit, "body"> = {}): Promise<T> {
+  assertBackendConfiguredForApi(path);
+
   if (OFFLINE_ADMIN && path === "/api/admin/upload") {
     const file = formData.get("file");
     if (!(file instanceof File)) throw new Error("No file provided");
