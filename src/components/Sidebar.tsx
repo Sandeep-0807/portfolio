@@ -150,8 +150,8 @@ const Sidebar = ({
         </div>
 
         <div className="text-center mt-6 mb-4 animate-fade-in">
-          <h2 className="text-2xl font-bold text-gradient">{profile?.name || "Your Name"}</h2>
-          <p className="text-sm font-medium text-muted-foreground mt-2">{profile?.title || "Your Title"}</p>
+          <h2 className="text-2xl font-bold text-gradient">{profile?.name || "Portfolio"}</h2>
+          {profile?.title && <p className="text-sm font-medium text-muted-foreground mt-2">{profile.title}</p>}
         </div>
       </div>
 
