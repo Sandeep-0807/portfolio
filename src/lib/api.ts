@@ -272,6 +272,32 @@ async function supabaseIsAdmin(): Promise<boolean> {
   return Boolean(data);
 }
 
+function formatSupabaseRlsHint(rawMessage: string): string {
+  const msg = rawMessage || "Permission denied";
+  const isRls = /row\s*-?level\s*security/i.test(msg);
+  if (!isRls) return msg;
+  return [
+    "Permission denied by Supabase Row Level Security (RLS).",
+    "Make sure you are signed in as an admin user (public.user_roles has role = admin for your auth user_id).",
+    `Raw error: ${msg}`,
+  ].join(" ");
+}
+
+async function requireSupabaseAdmin(): Promise<void> {
+  if (!supabase) throw new Error("Supabase is not configured");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    throw new Error("Unauthorized. Please sign out and sign in again.");
+  }
+
+  const admin = await supabaseIsAdmin();
+  if (!admin) {
+    throw new Error(
+      "Access denied: admin role required. Add your auth user_id to public.user_roles with role = admin.",
+    );
+  }
+}
+
 async function supabaseAuthLogin(options: RequestInit): Promise<{ token: string; user: { id: string; email: string; role: "admin" | "user" } }> {
   if (!supabase) throw new Error("Supabase is not configured");
   const body = parseJsonBody(options) as { email?: string; password?: string } | null;
@@ -341,6 +367,10 @@ async function supabaseApiFetch<T>(path: string, options: RequestInit = {}): Pro
   // Admin CRUD routes
   const adminRoute = parseSupabaseAdminPath(path);
   if (adminRoute) {
+    // Public pages have their own /api/public/* endpoints.
+    // Enforce admin access on /api/admin/* so users get a clear error instead of raw RLS messages.
+    await requireSupabaseAdmin();
+
     const { table, id } = adminRoute;
 
     const adminOrder: Record<string, { column: string; ascending: boolean }> = {
@@ -362,27 +392,27 @@ async function supabaseApiFetch<T>(path: string, options: RequestInit = {}): Pro
         q = q.order(order.column, { ascending: order.ascending });
       }
       const { data, error } = await q;
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(formatSupabaseRlsHint(error.message));
       return (data || []) as unknown as T;
     }
 
     if (method === "POST" && !id) {
       const body = requireRecord(parseJsonBody(options));
       const { data, error } = await supabase.from(table).insert(body).select("*").maybeSingle();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(formatSupabaseRlsHint(error.message));
       return data as unknown as T;
     }
 
     if ((method === "PUT" || method === "PATCH") && id) {
       const body = requireRecord(parseJsonBody(options));
       const { data, error } = await supabase.from(table).update(body).eq("id", id).select("*").maybeSingle();
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(formatSupabaseRlsHint(error.message));
       return data as unknown as T;
     }
 
     if (method === "DELETE" && id) {
       const { error } = await supabase.from(table).delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      if (error) throw new Error(formatSupabaseRlsHint(error.message));
       return ({ ok: true } as unknown) as T;
     }
 
@@ -588,6 +618,7 @@ export async function apiUpload<T>(path: string, formData: FormData, options: Om
 
   if (isSupabaseEnabled && path === "/api/admin/upload") {
     if (!supabase) throw new Error("Supabase is not configured");
+    await requireSupabaseAdmin();
     const file = formData.get("file");
     if (!(file instanceof File)) throw new Error("No file provided");
 
@@ -602,7 +633,7 @@ export async function apiUpload<T>(path: string, formData: FormData, options: Om
       contentType: file.type || undefined,
       upsert: false,
     });
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(`Upload failed. ${formatSupabaseRlsHint(error.message)}`);
 
     const { data } = supabase.storage.from(SUPABASE_STORAGE_BUCKET).getPublicUrl(objectPath);
     const url = data.publicUrl;
