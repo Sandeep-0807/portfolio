@@ -8,6 +8,7 @@ import { Mail, Phone, MapPin, Send, Copy, Check, Linkedin, Instagram, Facebook, 
 import { useToast } from "@/hooks/use-toast";
 import AnimatedSection from "@/components/AnimatedSection";
 import { apiFetch } from "@/lib/api";
+import { normalizeExternalUrl } from "@/lib/utils";
 
 type SocialLinks = {
   github?: string;
@@ -130,10 +131,18 @@ const ContactMe = () => {
   const socialLinks = useMemo(() => {
     const links: Array<{ icon: typeof Github; href: string; label: string }> = [];
     const s = contact?.social_links || {};
-    if (s.linkedin) links.push({ icon: Linkedin, href: s.linkedin, label: "LinkedIn" });
-    if (s.instagram) links.push({ icon: Instagram, href: s.instagram, label: "Instagram" });
-    if (s.facebook) links.push({ icon: Facebook, href: s.facebook, label: "Facebook" });
-    if (s.github) links.push({ icon: Github, href: s.github, label: "GitHub" });
+
+    const linkedinHref = s.linkedin ? normalizeExternalUrl(s.linkedin) : null;
+    if (linkedinHref) links.push({ icon: Linkedin, href: linkedinHref, label: "LinkedIn" });
+
+    const instagramHref = s.instagram ? normalizeExternalUrl(s.instagram) : null;
+    if (instagramHref) links.push({ icon: Instagram, href: instagramHref, label: "Instagram" });
+
+    const facebookHref = s.facebook ? normalizeExternalUrl(s.facebook) : null;
+    if (facebookHref) links.push({ icon: Facebook, href: facebookHref, label: "Facebook" });
+
+    const githubHref = s.github ? normalizeExternalUrl(s.github) : null;
+    if (githubHref) links.push({ icon: Github, href: githubHref, label: "GitHub" });
     return links;
   }, [contact]);
 

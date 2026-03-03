@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Mail, Phone, MapPin, Linkedin, Github, Instagram, Facebook } from "lucide-react";
+import { normalizeExternalUrl } from "@/lib/utils";
 
 interface SocialLinks {
   github?: string;
@@ -41,7 +42,7 @@ const AdminContact = () => {
   });
   const { toast } = useToast();
 
-  const fetchContent = async () => {
+  const fetchContent = useCallback(async () => {
     try {
       const rows = await apiFetch<ContactInfo[]>("/api/admin/contact_info");
       const data = rows?.[0] ?? null;
@@ -69,21 +70,31 @@ const AdminContact = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchContent();
-  }, []);
+  }, [fetchContent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
+    const cleanedSocialLinks: SocialLinks = {};
+    const githubHref = normalizeExternalUrl(socialLinks.github || "");
+    if (githubHref) cleanedSocialLinks.github = githubHref;
+    const linkedinHref = normalizeExternalUrl(socialLinks.linkedin || "");
+    if (linkedinHref) cleanedSocialLinks.linkedin = linkedinHref;
+    const instagramHref = normalizeExternalUrl(socialLinks.instagram || "");
+    if (instagramHref) cleanedSocialLinks.instagram = instagramHref;
+    const facebookHref = normalizeExternalUrl(socialLinks.facebook || "");
+    if (facebookHref) cleanedSocialLinks.facebook = facebookHref;
+
     const contactData = {
       email: formData.email || null,
       phone: formData.phone || null,
       location: formData.location || null,
-      social_links: socialLinks,
+      social_links: cleanedSocialLinks,
     };
 
     try {

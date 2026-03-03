@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, memo } from "react";
 import profileImage from "@/assets/profile.jpg";
 import ThemeToggle from "@/components/ThemeToggle";
 import { apiFetch } from "@/lib/api";
+import { normalizeExternalUrl } from "@/lib/utils";
 interface SidebarProps {
   activeSection: string;
 }
@@ -136,10 +137,18 @@ const Sidebar = ({
 
   const links: Array<{ icon: typeof Github; href: string; label: string }> = [];
   const social = contact?.social_links || {};
-  if (social.github) links.push({ icon: Github, href: social.github, label: "GitHub" });
-  if (social.linkedin) links.push({ icon: Linkedin, href: social.linkedin, label: "LinkedIn" });
-  if (social.instagram) links.push({ icon: Instagram, href: social.instagram, label: "Instagram" });
-  if (social.facebook) links.push({ icon: Facebook, href: social.facebook, label: "Facebook" });
+
+  const githubHref = social.github ? normalizeExternalUrl(social.github) : null;
+  if (githubHref) links.push({ icon: Github, href: githubHref, label: "GitHub" });
+
+  const linkedinHref = social.linkedin ? normalizeExternalUrl(social.linkedin) : null;
+  if (linkedinHref) links.push({ icon: Linkedin, href: linkedinHref, label: "LinkedIn" });
+
+  const instagramHref = social.instagram ? normalizeExternalUrl(social.instagram) : null;
+  if (instagramHref) links.push({ icon: Instagram, href: instagramHref, label: "Instagram" });
+
+  const facebookHref = social.facebook ? normalizeExternalUrl(social.facebook) : null;
+  if (facebookHref) links.push({ icon: Facebook, href: facebookHref, label: "Facebook" });
 
   const SidebarContent = memo(() => <div className="flex flex-col flex-1">
       {/* Top Section - Profile */}
