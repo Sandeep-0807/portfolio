@@ -26,7 +26,6 @@ export default defineConfig(({ mode }) => ({
         projects: path.resolve(__dirname, "projects.html"),
         certificates: path.resolve(__dirname, "certificates.html"),
         education: path.resolve(__dirname, "education.html"),
-        experience: path.resolve(__dirname, "experience.html"),
         contact: path.resolve(__dirname, "contact.html"),
       },
     },

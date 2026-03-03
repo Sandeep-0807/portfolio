@@ -8,7 +8,6 @@ import Projects from "@/components/sections/Projects";
 import Resume from "@/components/sections/Resume";
 import ContactMe from "@/components/sections/ContactMe";
 import Education from "@/components/sections/Education";
-import Experience from "@/components/sections/Experience";
 
 type IndexProps = {
   initialSection?: string;
@@ -20,7 +19,6 @@ function normalizeSection(value?: string) {
     "about",
     "skills",
     "education",
-    "experience",
     "certificates",
     "projects",
     "resume",
@@ -40,8 +38,6 @@ const Index = ({ initialSection }: IndexProps) => {
         return <Skills />;
       case "education":
         return <Education />;
-      case "experience":
-        return <Experience />;
       case "certificates":
         return <Certificates />;
       case "projects":

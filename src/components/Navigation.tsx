@@ -8,7 +8,6 @@ const Navigation = ({ activeSection, onNavigate }: NavigationProps) => {
     { id: "about", label: "About Me" },
     { id: "skills", label: "Skills" },
     { id: "education", label: "Education" },
-    { id: "experience", label: "Experience" },
     { id: "certificates", label: "Certificates" },
     { id: "projects", label: "Projects" },
     { id: "resume", label: "Resume" },
