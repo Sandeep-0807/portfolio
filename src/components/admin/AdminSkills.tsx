@@ -23,6 +23,7 @@ interface Skill {
 const AdminSkills = () => {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importingSamples, setImportingSamples] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
   const [formData, setFormData] = useState({
@@ -34,6 +35,65 @@ const AdminSkills = () => {
     sort_order: 0,
   });
   const { toast } = useToast();
+
+  const sampleSkills: Array<Pick<Skill, "name" | "icon" | "description" | "proficiency" | "status" | "sort_order">> = [
+    {
+      name: "Python",
+      icon: "🐍",
+      description: "Data analysis, ML model development, automation",
+      proficiency: 90,
+      status: "proficient",
+      sort_order: 1,
+    },
+    {
+      name: "C Programming",
+      icon: "💻",
+      description: "System programming, data structures, algorithms",
+      proficiency: 85,
+      status: "proficient",
+      sort_order: 2,
+    },
+    {
+      name: "HTML & CSS",
+      icon: "🎨",
+      description: "Responsive web design, modern layouts",
+      proficiency: 80,
+      status: "proficient",
+      sort_order: 3,
+    },
+    {
+      name: "Data Structures",
+      icon: "🗂️",
+      description: "Arrays, linked lists, trees, graphs, algorithms",
+      proficiency: 88,
+      status: "proficient",
+      sort_order: 4,
+    },
+    {
+      name: "JavaScript",
+      icon: "⚡",
+      description: "Web development, API integration",
+      proficiency: 70,
+      status: "learning",
+      sort_order: 101,
+    },
+    {
+      name: "Foundations of Data Science",
+      icon: "📊",
+      description: "Statistical analysis, data exploration, modeling",
+      proficiency: 75,
+      status: "learning",
+      sort_order: 102,
+    },
+    {
+      name: "Data Visualization",
+      icon: "📈",
+      description: "Matplotlib, Seaborn, Plotly dashboards",
+      proficiency: 72,
+      status: "learning",
+      sort_order: 103,
+    },
+  ];
 
   const fetchSkills = async () => {
     try {
@@ -50,6 +110,39 @@ const AdminSkills = () => {
   useEffect(() => {
     fetchSkills();
   }, []);
+
+  const importSampleSkills = async () => {
+    setImportingSamples(true);
+    try {
+      const existing = await apiFetch<Skill[]>("/api/admin/skills");
+      if ((existing || []).length > 0) {
+        toast({
+          title: "Already populated",
+          description: "Skills already exist in the database.",
+        });
+        setSkills(existing || []);
+        return;
+      }
+
+      for (const s of sampleSkills) {
+        await apiFetch("/api/admin/skills", {
+          method: "POST",
+          body: JSON.stringify(s),
+        });
+      }
+
+      toast({
+        title: "Imported",
+        description: "Sample skills added to the database.",
+      });
+      fetchSkills();
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error("Import failed");
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setImportingSamples(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -234,7 +327,15 @@ const AdminSkills = () => {
 
       {skills.length === 0 && (
         <Card className="p-8 text-center glass-card">
-          <p className="text-muted-foreground">No skills added yet. Click "Add Skill" to get started.</p>
+          <p className="text-muted-foreground">No skills saved in the database yet. Click "Add Skill" to get started.</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Note: the live site can show sample skills even when the database is empty.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <Button variant="outline" onClick={importSampleSkills} disabled={importingSamples}>
+              {importingSamples ? "Importing…" : "Import Sample Skills"}
+            </Button>
+          </div>
         </Card>
       )}
     </div>
