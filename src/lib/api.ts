@@ -5,8 +5,56 @@ type ApiError = {
 };
 
 const PUBLIC_CACHE_TTL_MS = 30_000;
+const PUBLIC_SESSION_CACHE_TTL_MS = 60_000;
+const PUBLIC_SESSION_CACHE_PREFIX = "portfolio_public_cache_v1:";
 const publicInFlight = new Map<string, Promise<unknown>>();
 const publicCache = new Map<string, { at: number; value: unknown }>();
+
+function getSessionCacheKey(path: string): string {
+  return `${PUBLIC_SESSION_CACHE_PREFIX}${path}`;
+}
+
+function readPublicSessionCache(path: string): unknown | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(getSessionCacheKey(path));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; value: unknown } | null;
+    if (!parsed || typeof parsed.at !== "number") return null;
+    if (Date.now() - parsed.at > PUBLIC_SESSION_CACHE_TTL_MS) return null;
+    return parsed.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writePublicSessionCache(path: string, value: unknown) {
+  if (typeof window === "undefined") return;
+  try {
+    const payload = JSON.stringify({ at: Date.now(), value });
+    // Avoid blowing up storage with huge payloads.
+    if (payload.length > 200_000) return;
+    window.sessionStorage.setItem(getSessionCacheKey(path), payload);
+  } catch {
+    // ignore
+  }
+}
+
+function clearPublicCaches() {
+  publicCache.clear();
+  publicInFlight.clear();
+  if (typeof window === "undefined") return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < window.sessionStorage.length; i++) {
+      const k = window.sessionStorage.key(i);
+      if (k && k.startsWith(PUBLIC_SESSION_CACHE_PREFIX)) keysToRemove.push(k);
+    }
+    for (const k of keysToRemove) window.sessionStorage.removeItem(k);
+  } catch {
+    // ignore
+  }
+}
 
 const TOKEN_KEY = "portfolio_token";
 
@@ -613,9 +661,13 @@ export function setAuthToken(token: string | null) {
 async function apiFetchCore<T>(path: string, options: RequestInit = {}): Promise<T> {
   assertBackendConfiguredForApi(path);
 
+  const method = normalizeMethod(options);
+
   if (isSupabaseEnabled && path.startsWith("/api/")) {
     try {
-      return await supabaseApiFetch<T>(path, options);
+      const result = await supabaseApiFetch<T>(path, options);
+      if (path.startsWith("/api/admin/") && method !== "GET") clearPublicCaches();
+      return result;
     } catch (e) {
       throw normalizeNetworkError(e);
     }
@@ -665,6 +717,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   // De-dupe and short-cache public GETs to reduce perceived load time.
   if (isPublicGet(path, options)) {
+    const sessionValue = readPublicSessionCache(path);
+    if (sessionValue !== null) {
+      publicCache.set(path, { at: Date.now(), value: sessionValue });
+      return sessionValue as T;
+    }
+
     const cached = publicCache.get(path);
     if (cached && Date.now() - cached.at < PUBLIC_CACHE_TTL_MS) {
       return cached.value as T;
@@ -675,6 +733,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     const p = (async () => {
       const v = await apiFetchCore<T>(path, { ...options, method: "GET" });
       publicCache.set(path, { at: Date.now(), value: v as unknown });
+      writePublicSessionCache(path, v as unknown);
       return v as unknown;
     })()
       .catch((e) => {
