@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ExternalLink } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import { apiFetch } from "@/lib/api";
+import { normalizeExternalUrl } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -79,6 +80,26 @@ const Projects = () => {
     };
   }, []);
 
+  const selectedGithubUrl = selectedProject?.github_url ? normalizeExternalUrl(selectedProject.github_url) : null;
+  const selectedLiveUrl = selectedProject?.live_url ? normalizeExternalUrl(selectedProject.live_url) : null;
+
+  if (!loading && loadError) {
+    return (
+      <section className="space-y-8">
+        <AnimatedSection>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-2 text-gradient">Projects</h1>
+            <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
+          </div>
+        </AnimatedSection>
+
+        <Card className="glass-card border-primary/20 p-4 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-8">
       <AnimatedSection>
@@ -87,12 +108,6 @@ const Projects = () => {
           <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
         </div>
       </AnimatedSection>
-
-      {!loading && loadError && (
-        <Card className="glass-card border-primary/20 p-4 text-center">
-          <p className="text-muted-foreground">{loadError}</p>
-        </Card>
-      )}
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
@@ -168,16 +183,16 @@ const Projects = () => {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {selectedProject?.github_url && (
+              {selectedGithubUrl && (
                 <Button asChild variant="outline">
-                  <a href={selectedProject.github_url} target="_blank" rel="noopener noreferrer">
+                  <a href={selectedGithubUrl} target="_blank" rel="noopener noreferrer">
                     GitHub <ExternalLink className="w-4 h-4 ml-2" />
                   </a>
                 </Button>
               )}
-              {selectedProject?.live_url && (
+              {selectedLiveUrl && (
                 <Button asChild>
-                  <a href={selectedProject.live_url} target="_blank" rel="noopener noreferrer">
+                  <a href={selectedLiveUrl} target="_blank" rel="noopener noreferrer">
                     Live Demo <ExternalLink className="w-4 h-4 ml-2" />
                   </a>
                 </Button>

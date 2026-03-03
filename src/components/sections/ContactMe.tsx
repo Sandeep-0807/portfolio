@@ -102,7 +102,10 @@ const ContactMe = () => {
       `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
     )}`;
 
-    window.location.href = mailtoLink;
+    const opened = window.open(mailtoLink, "_blank");
+    if (!opened) {
+      window.location.href = mailtoLink;
+    }
 
     toast({
       title: "Opening email client",

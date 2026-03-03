@@ -148,7 +148,24 @@ const Skills = () => {
     return byStatus;
   }, [items]);
 
-  const useDb = !loading && items.length > 0;
+  const useDb = !loading && !loadError && items.length > 0;
+
+  if (!loading && loadError) {
+    return (
+      <section className="space-y-8">
+        <AnimatedSection>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-2 text-gradient">Skills</h1>
+            <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
+          </div>
+        </AnimatedSection>
+
+        <Card className="glass-card border-primary/20 p-4 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-8">
@@ -158,12 +175,6 @@ const Skills = () => {
           <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
         </div>
       </AnimatedSection>
-
-      {!loading && loadError && (
-        <Card className="glass-card border-primary/20 p-4 text-center">
-          <p className="text-muted-foreground">{loadError}</p>
-        </Card>
-      )}
 
       <div className="space-y-8">
         <AnimatedSection delay={100}>

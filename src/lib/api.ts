@@ -4,6 +4,10 @@ type ApiError = {
   error: string;
 };
 
+const PUBLIC_CACHE_TTL_MS = 30_000;
+const publicInFlight = new Map<string, Promise<unknown>>();
+const publicCache = new Map<string, { at: number; value: unknown }>();
+
 const TOKEN_KEY = "portfolio_token";
 
 const IS_DEV = import.meta.env.DEV;
@@ -138,6 +142,27 @@ function parseJsonBody(options: RequestInit): unknown {
 
 function normalizeMethod(options: RequestInit) {
   return (options.method || "GET").toUpperCase();
+}
+
+function isPublicGet(path: string, options: RequestInit): boolean {
+  const method = normalizeMethod(options);
+  if (method !== "GET") return false;
+  if (!path.startsWith("/api/public/")) return false;
+  // Avoid caching requests that might be customized.
+  if (options.body) return false;
+  return true;
+}
+
+function normalizeNetworkError(err: unknown): Error {
+  const e = err instanceof Error ? err : new Error("Request failed");
+  const msg = (e.message || "").toLowerCase();
+  // Browsers and Supabase client often surface network errors as TypeError: Failed to fetch.
+  if (e.name === "TypeError" && (msg.includes("failed to fetch") || msg.includes("networkerror"))) {
+    return new Error(
+      "Failed to fetch data. Check your internet connection and verify VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are set correctly (then redeploy).",
+    );
+  }
+  return e;
 }
 
 type LocalDbTableKey = Exclude<keyof LocalDb, "version">;
@@ -583,11 +608,15 @@ export function setAuthToken(token: string | null) {
   }
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function apiFetchCore<T>(path: string, options: RequestInit = {}): Promise<T> {
   assertBackendConfiguredForApi(path);
 
   if (isSupabaseEnabled && path.startsWith("/api/")) {
-    return supabaseApiFetch<T>(path, options);
+    try {
+      return await supabaseApiFetch<T>(path, options);
+    } catch (e) {
+      throw normalizeNetworkError(e);
+    }
   }
 
   if (OFFLINE_ADMIN && path.startsWith("/api/")) {
@@ -600,7 +629,18 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   const token = getAuthToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(buildUrl(path), { ...options, headers });
+  const controller = new AbortController();
+  const timeoutMs = 15_000;
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path), { ...options, headers, signal: controller.signal });
+  } catch (e) {
+    throw normalizeNetworkError(e);
+  } finally {
+    clearTimeout(t);
+  }
   const { data, isJson, text } = await readResponse(res);
 
   if (!res.ok) {
@@ -616,6 +656,37 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   }
 
   return data as T;
+}
+
+export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  assertBackendConfiguredForApi(path);
+
+  // De-dupe and short-cache public GETs to reduce perceived load time.
+  if (isPublicGet(path, options)) {
+    const cached = publicCache.get(path);
+    if (cached && Date.now() - cached.at < PUBLIC_CACHE_TTL_MS) {
+      return cached.value as T;
+    }
+    const inflight = publicInFlight.get(path);
+    if (inflight) return (await inflight) as T;
+
+    const p = (async () => {
+      const v = await apiFetchCore<T>(path, { ...options, method: "GET" });
+      publicCache.set(path, { at: Date.now(), value: v as unknown });
+      return v as unknown;
+    })()
+      .catch((e) => {
+        throw e;
+      })
+      .finally(() => {
+        publicInFlight.delete(path);
+      });
+
+    publicInFlight.set(path, p);
+    return (await p) as T;
+  }
+
+  return apiFetchCore<T>(path, options);
 }
 
 export async function apiUpload<T>(path: string, formData: FormData, options: Omit<RequestInit, "body"> = {}): Promise<T> {
