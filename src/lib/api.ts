@@ -52,7 +52,9 @@ function isProbablyDeployedHost(hostname: string): boolean {
 function backendConfigHint(): string {
   const parts: string[] = [];
   parts.push("Backend not configured");
-  parts.push("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel (recommended)");
+  parts.push(
+    "Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or VITE_SUPABASE_ANON_KEY) in Vercel (recommended)",
+  );
   parts.push("or set VITE_API_BASE to your running API server URL");
   parts.push("and ensure VITE_OFFLINE_ADMIN is not enabled in production");
   return parts.join(". ") + ".";
@@ -159,7 +161,7 @@ function normalizeNetworkError(err: unknown): Error {
   // Browsers and Supabase client often surface network errors as TypeError: Failed to fetch.
   if (e.name === "TypeError" && (msg.includes("failed to fetch") || msg.includes("networkerror"))) {
     return new Error(
-      "Failed to fetch data. Check your internet connection and verify VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are set correctly (then redeploy).",
+      "Failed to fetch data. Check your internet connection and verify VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY (or VITE_SUPABASE_ANON_KEY) are set correctly (then redeploy).",
     );
   }
   return e;
