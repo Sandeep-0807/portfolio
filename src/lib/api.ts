@@ -273,13 +273,18 @@ async function supabaseIsAdmin(): Promise<boolean> {
 }
 
 function formatSupabaseRlsHint(rawMessage: string): string {
-  const msg = rawMessage || "Permission denied";
-  const isRls = /row\s*-?level\s*security/i.test(msg);
-  if (!isRls) return msg;
+  const msg = (rawMessage || "Permission denied").trim();
+
+  // Common Supabase RLS failures.
+  const looksLikeRls = /row\s*-?level\s*security/i.test(msg) || /new row violates/i.test(msg);
+  if (!looksLikeRls) return msg;
+
+  // Keep it non-technical. Point to the two real fixes: admin role + policies.
   return [
-    "Permission denied by Supabase Row Level Security (RLS).",
-    "Make sure you are signed in as an admin user (public.user_roles has role = admin for your auth user_id).",
-    `Raw error: ${msg}`,
+    "Not allowed to save.",
+    "Your Supabase security (RLS) blocked this change.",
+    "Fix: ensure your logged-in user is an admin (public.user_roles contains your auth user_id with role = admin)",
+    "and run the latest RLS migrations/policies for tables + Storage uploads.",
   ].join(" ");
 }
 
@@ -287,13 +292,13 @@ async function requireSupabaseAdmin(): Promise<void> {
   if (!supabase) throw new Error("Supabase is not configured");
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
-    throw new Error("Unauthorized. Please sign out and sign in again.");
+    throw new Error("Session expired. Please sign out and sign in again.");
   }
 
   const admin = await supabaseIsAdmin();
   if (!admin) {
     throw new Error(
-      "Access denied: admin role required. Add your auth user_id to public.user_roles with role = admin.",
+      "Access denied: this account is not an admin. Add your auth user_id to public.user_roles with role = admin.",
     );
   }
 }
