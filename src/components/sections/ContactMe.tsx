@@ -28,6 +28,7 @@ type ContactInfo = {
 const ContactMe = () => {
   const [contact, setContact] = useState<ContactInfo>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,10 +41,12 @@ const ContactMe = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const c = await apiFetch<ContactInfo>("/api/public/contact");
         setContact(c);
-      } catch {
-        // ignore
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load contact info");
+        setLoadError(err.message || "Failed to load contact info");
       } finally {
         setLoading(false);
       }
@@ -142,6 +145,12 @@ const ContactMe = () => {
           <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
         </div>
       </AnimatedSection>
+
+      {!loading && loadError && (
+        <Card className="glass-card border-primary/20 p-4 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-8">
         <AnimatedSection delay={100}>

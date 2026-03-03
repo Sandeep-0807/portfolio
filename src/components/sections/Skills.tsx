@@ -43,14 +43,17 @@ function pickBetterSkill(a: Skill, b: Skill): Skill {
 const Skills = () => {
   const [items, setItems] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const data = await apiFetch<Skill[]>("/api/public/skills");
         setItems(data || []);
-      } catch {
-        // ignore
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load skills");
+        setLoadError(err.message || "Failed to load skills");
       } finally {
         setLoading(false);
       }
@@ -155,6 +158,12 @@ const Skills = () => {
           <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
         </div>
       </AnimatedSection>
+
+      {!loading && loadError && (
+        <Card className="glass-card border-primary/20 p-4 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
+      )}
 
       <div className="space-y-8">
         <AnimatedSection delay={100}>

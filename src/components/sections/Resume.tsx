@@ -32,18 +32,21 @@ const Resume = () => {
   const [resume, setResume] = useState<ResumeContent>(null);
   const [contact, setContact] = useState<ContactInfo>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const [r, c] = await Promise.all([
           apiFetch<ResumeContent>("/api/public/resume"),
           apiFetch<ContactInfo>("/api/public/contact"),
         ]);
         setResume(r);
         setContact(c);
-      } catch {
-        // ignore
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load resume data");
+        setLoadError(err.message || "Failed to load resume data");
       } finally {
         setLoading(false);
       }
@@ -106,6 +109,8 @@ const Resume = () => {
           </div>
           {loading ? (
             <div className="text-sm text-muted-foreground">Loading...</div>
+          ) : loadError ? (
+            <div className="text-sm text-muted-foreground">{loadError}</div>
           ) : hasContact ? (
             <div className="grid sm:grid-cols-2 gap-3 text-sm">
               {contactItems.map((item, i) => (

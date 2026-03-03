@@ -6,10 +6,27 @@ type ApiError = {
 
 const TOKEN_KEY = "portfolio_token";
 
+const IS_DEV = import.meta.env.DEV;
+
 const OFFLINE_ADMIN = (() => {
   const raw = (import.meta.env.VITE_OFFLINE_ADMIN as string | undefined) ?? "";
   const v = raw.trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
+  const requested = v === "1" || v === "true" || v === "yes" || v === "on";
+  if (!requested) return false;
+
+  // Offline Admin is safe/expected for local development.
+  // In dev, explicit opt-in should always work.
+  if (IS_DEV) return true;
+
+  // In non-dev builds, if a real backend is configured, prefer it.
+  if (isSupabaseEnabled) return false;
+  if (API_BASE?.trim()) return false;
+
+  // On deployed/static hosts (e.g. Vercel), do not allow Offline Admin fallback.
+  // It would "work" only in the current browser (localStorage) and look like data loss.
+  if (typeof window !== "undefined" && isProbablyDeployedHost(window.location.hostname)) return false;
+
+  return true;
 })();
 
 const LOCAL_ADMIN_PASSWORD = (import.meta.env.VITE_LOCAL_ADMIN_PASSWORD as string | undefined) ?? undefined;
@@ -33,6 +50,7 @@ function backendConfigHint(): string {
   parts.push("Backend not configured");
   parts.push("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel (recommended)");
   parts.push("or set VITE_API_BASE to your running API server URL");
+  parts.push("and ensure VITE_OFFLINE_ADMIN is not enabled in production");
   return parts.join(". ") + ".";
 }
 
@@ -533,12 +551,12 @@ export function setAuthToken(token: string | null) {
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   assertBackendConfiguredForApi(path);
 
-  if (OFFLINE_ADMIN && path.startsWith("/api/")) {
-    return Promise.resolve(localApiFetch<T>(path, options));
-  }
-
   if (isSupabaseEnabled && path.startsWith("/api/")) {
     return supabaseApiFetch<T>(path, options);
+  }
+
+  if (OFFLINE_ADMIN && path.startsWith("/api/")) {
+    return Promise.resolve(localApiFetch<T>(path, options));
   }
 
   const headers = new Headers(options.headers);
@@ -568,13 +586,6 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 export async function apiUpload<T>(path: string, formData: FormData, options: Omit<RequestInit, "body"> = {}): Promise<T> {
   assertBackendConfiguredForApi(path);
 
-  if (OFFLINE_ADMIN && path === "/api/admin/upload") {
-    const file = formData.get("file");
-    if (!(file instanceof File)) throw new Error("No file provided");
-    const url = await fileToDataUrl(file);
-    return { url } as unknown as T;
-  }
-
   if (isSupabaseEnabled && path === "/api/admin/upload") {
     if (!supabase) throw new Error("Supabase is not configured");
     const file = formData.get("file");
@@ -597,6 +608,13 @@ export async function apiUpload<T>(path: string, formData: FormData, options: Om
     const url = data.publicUrl;
     if (!url) throw new Error("Upload succeeded but no public URL was returned");
 
+    return { url } as unknown as T;
+  }
+
+  if (OFFLINE_ADMIN && path === "/api/admin/upload") {
+    const file = formData.get("file");
+    if (!(file instanceof File)) throw new Error("No file provided");
+    const url = await fileToDataUrl(file);
     return { url } as unknown as T;
   }
 

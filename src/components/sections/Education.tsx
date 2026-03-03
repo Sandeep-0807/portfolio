@@ -118,12 +118,17 @@ function renderDescription(description: string, variant: "parent" | "child") {
 const Education = () => {
   const [items, setItems] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const data = await apiFetch<Education[]>("/api/public/education");
         setItems(data || []);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load education");
+        setLoadError(err.message || "Failed to load education");
       } finally {
         setLoading(false);
       }
@@ -142,6 +147,10 @@ const Education = () => {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
+      ) : loadError ? (
+        <Card className="glass-card border-primary/20 p-8 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
       ) : items.length === 0 ? (
         <Card className="glass-card border-primary/20 p-8 text-center">
           <p className="text-muted-foreground">No education entries yet.</p>

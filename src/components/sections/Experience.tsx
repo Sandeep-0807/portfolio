@@ -117,12 +117,17 @@ function renderDescription(description: string) {
 const Experience = () => {
   const [items, setItems] = useState<Experience[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const data = await apiFetch<Experience[]>("/api/public/experience");
         setItems(data || []);
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load experience");
+        setLoadError(err.message || "Failed to load experience");
       } finally {
         setLoading(false);
       }
@@ -141,6 +146,10 @@ const Experience = () => {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>
+      ) : loadError ? (
+        <Card className="glass-card border-primary/20 p-8 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
       ) : items.length === 0 ? (
         <Card className="glass-card border-primary/20 p-8 text-center">
           <p className="text-muted-foreground">No experience entries yet.</p>

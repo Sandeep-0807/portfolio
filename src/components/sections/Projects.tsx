@@ -34,14 +34,17 @@ const Projects = () => {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const data = await apiFetch<Project[]>("/api/public/projects");
         setProjects(data || []);
-      } catch {
-        // ignore
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load projects");
+        setLoadError(err.message || "Failed to load projects");
       } finally {
         setLoading(false);
       }
@@ -84,6 +87,12 @@ const Projects = () => {
           <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full neon-glow"></div>
         </div>
       </AnimatedSection>
+
+      {!loading && loadError && (
+        <Card className="glass-card border-primary/20 p-4 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
+      )}
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Loading...</div>

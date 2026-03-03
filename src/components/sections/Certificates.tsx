@@ -34,6 +34,7 @@ function alignClass(value?: string | null) {
 const Certificates = () => {
   const [items, setItems] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [viewer, setViewer] = useState<Certificate | null>(null);
   const [pdfNumPages, setPdfNumPages] = useState<number>(0);
   const [pdfPageNumber, setPdfPageNumber] = useState<number>(1);
@@ -71,10 +72,12 @@ const Certificates = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const data = await apiFetch<Certificate[]>("/api/public/certificates");
         setItems(data || []);
-      } catch {
-        // ignore
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load certificates");
+        setLoadError(err.message || "Failed to load certificates");
       } finally {
         setLoading(false);
       }
@@ -113,6 +116,10 @@ const Certificates = () => {
       <div className="space-y-8">
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        ) : loadError ? (
+          <Card className="glass-card border-primary/20 p-8 text-center">
+            <p className="text-muted-foreground">{loadError}</p>
+          </Card>
         ) : items.length === 0 ? (
           <Card className="glass-card border-primary/20 p-8 text-center">
             <p className="text-muted-foreground">No certificates yet.</p>

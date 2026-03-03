@@ -30,14 +30,17 @@ function alignClass(value?: string | null) {
 const AboutMe = () => {
   const [content, setContent] = useState<AboutContent>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
       try {
+        setLoadError(null);
         const data = await apiFetch<AboutContent>("/api/public/about");
         setContent(data);
-      } catch {
-        // ignore and fall back
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error("Failed to load about content");
+        setLoadError(err.message || "Failed to load about content");
       } finally {
         setLoading(false);
       }
@@ -108,6 +111,12 @@ const AboutMe = () => {
           )}
         </div>
       </AnimatedSection>
+
+      {!loading && loadError && (
+        <Card className="glass-card border-primary/20 p-4 text-center">
+          <p className="text-muted-foreground">{loadError}</p>
+        </Card>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-8">
         <AnimatedSection delay={100}>
