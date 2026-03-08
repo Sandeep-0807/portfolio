@@ -18,6 +18,7 @@ type Certificate = {
   description: string | null;
   description_align?: string | null;
   sort_order: number | null;
+  status?: "completed" | "learning" | null;
 };
 
 // Vite + react-pdf: use ?url so the worker resolves correctly in dev/prod.
@@ -145,9 +146,19 @@ const Certificates = () => {
                       <Card className="glass-card border-primary/20 p-6 hover-glow cursor-pointer group h-full">
                         <div className="space-y-3">
                           <div className="flex items-start justify-between">
-                            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-smooth">
-                              {item.title}
-                            </h3>
+                            <div className="flex flex-col">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-smooth">
+                                  {item.title}
+                                </h3>
+                                <Badge className={`text-[8px] px-1 py-0 h-4 border ${item.status === "learning"
+                                  ? "bg-secondary/10 text-secondary border-secondary/30"
+                                  : "bg-primary/10 text-primary border-primary/30"
+                                  }`}>
+                                  {item.status === "learning" ? "In Progress" : "Completed"}
+                                </Badge>
+                              </div>
+                            </div>
                             {item.date && (
                               <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">{item.date}</span>
                             )}
@@ -303,7 +314,7 @@ const Certificates = () => {
         <Card className="glass-card border-primary/20 p-6">
           <p className="text-sm text-center text-muted-foreground">
             <span className="font-semibold text-foreground">Note:</span>Certificate images and verification links are available.
-All achievements are verifiable through official platforms.
+            All achievements are verifiable through official platforms.
           </p>
         </Card>
       </AnimatedSection>

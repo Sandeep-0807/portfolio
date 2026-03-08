@@ -300,29 +300,63 @@ const AdminSkills = () => {
         </Dialog>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {skills.map((skill) => (
-          <Card key={skill.id} className="p-4 glass-card border-primary/20">
-            <div className="flex items-start justify-between">
+      <div className="space-y-8">
+        {[
+          { id: "proficient", label: "Proficient Skills", badge: "Completed" },
+          { id: "learning", label: "Currently Learning", badge: "In Progress" }
+        ].map((section) => {
+          const sectionSkills = skills.filter(s => s.status === section.id);
+          if (sectionSkills.length === 0 && skills.length > 0) return null;
+
+          return (
+            <div key={section.id} className="space-y-4">
               <div className="flex items-center space-x-3">
-                <span className="text-2xl">{skill.icon}</span>
-                <div>
-                  <h3 className="font-semibold text-foreground">{skill.name}</h3>
-                  <p className="text-sm text-muted-foreground">{skill.description}</p>
-                  <span className="text-xs text-primary">{skill.status} • {skill.proficiency}%</span>
-                </div>
+                <h3 className="text-xl font-bold text-foreground">{section.label}</h3>
+                <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full ${section.id === "proficient"
+                    ? "bg-primary/20 text-primary border border-primary/30"
+                    : "bg-secondary/20 text-secondary border border-secondary/30"
+                  }`}>
+                  {section.badge}
+                </span>
               </div>
-              <div className="flex space-x-2">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(skill)}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(skill.id)}>
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
+              <div className="grid md:grid-cols-2 gap-4">
+                {sectionSkills.map((skill) => (
+                  <Card key={skill.id} className="p-4 glass-card border-primary/20 hover:border-primary/40 transition-all">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{skill.icon}</span>
+                        <div>
+                          <h3 className="font-semibold text-foreground">{skill.name}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-1">{skill.description}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <div className="h-1.5 w-20 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary"
+                                style={{ width: `${skill.proficiency}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">{skill.proficiency}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(skill)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(skill.id)}>
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                {sectionSkills.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic col-span-2 py-2">No skills in this category.</p>
+                )}
               </div>
             </div>
-          </Card>
-        ))}
+          );
+        })}
       </div>
 
       {skills.length === 0 && (

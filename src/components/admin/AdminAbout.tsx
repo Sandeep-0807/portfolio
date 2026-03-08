@@ -142,7 +142,7 @@ const AdminAbout = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description (supports multiple paragraphs)</Label>
+              <Label htmlFor="description">About Me Matter / Description (supports multiple paragraphs)</Label>
               <Textarea
                 id="description"
                 value={formData.description}

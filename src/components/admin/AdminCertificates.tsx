@@ -19,6 +19,7 @@ interface Certificate {
   description: string | null;
   description_align?: string | null;
   sort_order: number | null;
+  status?: string | null;
 }
 
 const AdminCertificates = () => {
@@ -33,6 +34,7 @@ const AdminCertificates = () => {
     date: "",
     description: "",
     description_align: "justify",
+    status: "completed",
     sort_order: 0,
   });
   const { toast } = useToast();
@@ -60,6 +62,7 @@ const AdminCertificates = () => {
       date: "",
       description: "",
       description_align: "justify",
+      status: "completed",
       sort_order: 0,
     });
     setSelectedFile(null);
@@ -74,6 +77,7 @@ const AdminCertificates = () => {
       date: cert.date || "",
       description: cert.description || "",
       description_align: cert.description_align || "justify",
+      status: cert.status || "completed",
       sort_order: cert.sort_order || 0,
     });
     setSelectedFile(null);
@@ -104,6 +108,7 @@ const AdminCertificates = () => {
       description: formData.description || null,
       description_align: formData.description_align || null,
       sort_order: formData.sort_order,
+      status: formData.status,
       credential_url: uploadedUrl ?? (editingCert?.credential_url || null),
     };
 
@@ -166,13 +171,21 @@ const AdminCertificates = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
+                <Select
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="Hackathons / Quizzes / Workshops"
-                  required
-                />
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Hackathons">Hackathons</SelectItem>
+                    <SelectItem value="Courses">Courses</SelectItem>
+                    <SelectItem value="Workshops">Workshops</SelectItem>
+                    <SelectItem value="Quizzes">Quizzes</SelectItem>
+                    <SelectItem value="Achievements">Achievements</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
@@ -236,14 +249,31 @@ const AdminCertificates = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="sort_order">Sort Order</Label>
-                <Input
-                  id="sort_order"
-                  type="number"
-                  value={formData.sort_order}
-                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="learning">In Progress</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sort_order">Sort Order</Label>
+                  <Input
+                    id="sort_order"
+                    type="number"
+                    value={formData.sort_order}
+                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
+                  />
+                </div>
               </div>
               <Button type="submit" className="w-full">
                 <Save className="w-4 h-4 mr-2" />
@@ -254,32 +284,54 @@ const AdminCertificates = () => {
         </Dialog>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {certificates.map((cert) => (
-          <Card key={cert.id} className="p-4 glass-card border-primary/20">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground">{cert.title}</h3>
-                <p className="text-sm text-primary">{cert.issuer}</p>
-                {cert.date && <p className="text-xs text-muted-foreground">{cert.date}</p>}
-                {cert.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{cert.description}</p>}
-                {cert.credential_url && (
-                  <a href={cert.credential_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-2">
-                    View Certificate <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+      <div className="space-y-10">
+        {Array.from(new Set(certificates.map(c => c.issuer || "Uncategorized"))).sort().map((category) => {
+          const sectionCerts = certificates.filter(c => (c.issuer || "Uncategorized") === category);
+
+          return (
+            <div key={category} className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <h3 className="text-xl font-bold text-foreground">{category}</h3>
+                <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-primary/10 text-primary border border-primary/30">
+                  {sectionCerts.length} {sectionCerts.length === 1 ? 'Item' : 'Items'}
+                </span>
               </div>
-              <div className="flex space-x-2 ml-2">
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(cert)}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(cert.id)}>
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                </Button>
+              <div className="grid md:grid-cols-2 gap-4">
+                {sectionCerts.map((cert) => (
+                  <Card key={cert.id} className="p-4 glass-card border-primary/20 hover:border-primary/40 transition-all">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className="font-semibold text-foreground line-clamp-1">{cert.title}</h3>
+                          <span className={`px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-sm border ${cert.status === "completed"
+                            ? "bg-primary/10 text-primary border-primary/30"
+                            : "bg-secondary/10 text-secondary border-secondary/30"
+                            }`}>
+                            {cert.status === "completed" ? "Completed" : "In Progress"}
+                          </span>
+                        </div>
+                        {cert.date && <p className="text-xs text-muted-foreground">{cert.date}</p>}
+                        {cert.credential_url && (
+                          <a href={cert.credential_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-2">
+                            View Document <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex space-x-1 ml-2">
+                        <button onClick={() => handleEdit(cert)} className="p-1.5 hover:bg-primary/10 rounded-md transition-colors text-muted-foreground hover:text-primary">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(cert.id)} className="p-1.5 hover:bg-destructive/10 rounded-md transition-colors text-muted-foreground hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </div>
-          </Card>
-        ))}
+          );
+        })}
       </div>
 
       {certificates.length === 0 && (

@@ -84,6 +84,11 @@ try {
   await ensureColumn("certificates", "description_align", "VARCHAR(16) NULL");
   await ensureColumn("about_content", "description_align", "VARCHAR(16) NULL");
   await ensureColumn("education", "parent_id", "CHAR(36) NULL");
+  await ensureColumn("certificates", "status", "VARCHAR(32) DEFAULT 'completed'");
+  await ensureColumn("resume_content", "summary_text", "TEXT NULL");
+  await ensureColumn("resume_content", "education_summary", "TEXT NULL");
+  await ensureColumn("resume_content", "experience_summary", "TEXT NULL");
+  await ensureColumn("resume_content", "achievements_summary", "TEXT NULL");
 } catch {
   // Ignore: if DB is not ready yet, requests will surface the error.
 }

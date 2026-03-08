@@ -4,16 +4,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  LogOut, 
-  User, 
-  Code, 
-  Award, 
-  FolderOpen, 
-  FileText, 
+import {
+  LogOut,
+  User,
+  Code,
+  Award,
+  FolderOpen,
+  FileText,
   Mail,
   Home,
-  Shield
+  Shield,
+  Info
 } from "lucide-react";
 import AdminSkills from "@/components/admin/AdminSkills";
 import AdminProjects from "@/components/admin/AdminProjects";
@@ -85,10 +86,9 @@ const Admin = () => {
   };
 
   const tabs = [
-    { id: "about", label: "About", icon: User },
+    { id: "about", label: "About Me", icon: Info },
     { id: "skills", label: "Skills", icon: Code },
     { id: "education", label: "Education", icon: Award },
-    
     { id: "projects", label: "Projects", icon: FolderOpen },
     { id: "certificates", label: "Certificates", icon: Award },
     { id: "resume", label: "Resume", icon: FileText },
@@ -126,7 +126,7 @@ const Admin = () => {
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 mb-8">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 mb-8">
             {tabs.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
                 <tab.icon className="w-4 h-4" />

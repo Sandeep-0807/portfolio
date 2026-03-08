@@ -8,9 +8,25 @@ import { apiFetch } from "@/lib/api";
 type ResumeContent = {
   id: string;
   resume_url: string | null;
+  summary_text: string | null;
+  education_summary: string | null;
+  experience_summary: string | null;
+  achievements_summary: string | null;
   education: unknown;
   experience: unknown;
 } | null;
+
+interface Education {
+  id: string;
+  parent_id: string | null;
+  institution: string;
+  degree: string;
+  field_of_study: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  description: string | null;
+  sort_order: number | null;
+}
 
 type SocialLinks = {
   github?: string;
@@ -31,6 +47,7 @@ type ContactInfo = {
 const Resume = () => {
   const [resume, setResume] = useState<ResumeContent>(null);
   const [contact, setContact] = useState<ContactInfo>(null);
+  const [education, setEducation] = useState<Education[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -38,12 +55,14 @@ const Resume = () => {
     const fetch = async () => {
       try {
         setLoadError(null);
-        const [r, c] = await Promise.all([
+        const [r, c, e] = await Promise.all([
           apiFetch<ResumeContent>("/api/public/resume"),
           apiFetch<ContactInfo>("/api/public/contact"),
+          apiFetch<Education[]>("/api/public/education"),
         ]);
         setResume(r);
         setContact(c);
+        setEducation(e || []);
       } catch (e) {
         const err = e instanceof Error ? e : new Error("Failed to load resume data");
         setLoadError(err.message || "Failed to load resume data");
@@ -130,39 +149,45 @@ const Resume = () => {
         <Card className="glass-card border-primary/20 p-8">
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-4 text-foreground">Resume Overview</h2>
-              <p className="text-foreground/70 leading-relaxed">
-                A comprehensive summary of my academic journey, technical skills, project experiences, and achievements in the field of Artificial Intelligence and Machine Learning. This resume highlights my dedication to continuous learning and practical application of cutting-edge technologies.
+              <h2 className="text-2xl font-semibold mb-4 text-foreground text-gradient">Resume Overview</h2>
+              <p className="text-foreground/70 leading-relaxed mb-8">
+                {resume?.summary_text || "A comprehensive summary of my academic journey, technical skills, project experiences, and achievements in the field of Artificial Intelligence and Machine Learning."}
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <GraduationCap className="w-5 h-5 text-primary flex-shrink-0 mt-1 neon-glow" />
-                <div>
-                  <h3 className="font-semibold text-foreground">Education</h3>
-                  <p className="text-sm text-foreground/70">
-                    Bachelor's in Artificial Intelligence & Machine Learning, including coursework in Deep Learning, Neural Networks, Computer Vision, and Data Science
+            <div className="space-y-8">
+              <div className="flex items-start space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300">
+                  <GraduationCap className="w-6 h-6 text-primary neon-glow" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Education</h3>
+                  <p className="text-sm text-foreground/70 leading-relaxed">
+                    {resume?.education_summary || "B.Tech in Artificial Intelligence & Machine Learning, focusing on Deep Learning and Data Science."}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start space-x-3">
-                <Briefcase className="w-5 h-5 text-primary flex-shrink-0 mt-1 neon-glow" />
-                <div>
-                  <h3 className="font-semibold text-foreground">Experience</h3>
-                  <p className="text-sm text-foreground/70">
-                    Multiple hands-on projects involving ML model development, data preprocessing, API integration, and deployment of AI solutions
+              <div className="flex items-start space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300">
+                  <Briefcase className="w-6 h-6 text-primary neon-glow" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Experience</h3>
+                  <p className="text-sm text-foreground/70 leading-relaxed">
+                    {resume?.experience_summary || "Hands-on projects involving AI model development, full-stack integration, and innovative solution deployment."}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start space-x-3">
-                <Award className="w-5 h-5 text-primary flex-shrink-0 mt-1 neon-glow" />
-                <div>
-                  <h3 className="font-semibold text-foreground">Achievements</h3>
-                  <p className="text-sm text-foreground/70">
-                    Completed specialized certifications, participated in hackathons, and contributed to open-source AI projects
+              <div className="flex items-start space-x-4 group">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300">
+                  <Award className="w-6 h-6 text-primary neon-glow" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Achievements</h3>
+                  <p className="text-sm text-foreground/70 leading-relaxed">
+                    {resume?.achievements_summary || "Top performer in hackathons, certified AI specialist, and active contributor to open-source technical projects."}
                   </p>
                 </div>
               </div>
@@ -171,10 +196,10 @@ const Resume = () => {
             <Button
               asChild
               size="lg"
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-smooth neon-glow"
+              className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-smooth neon-glow py-6 text-lg mt-8"
             >
               <a href={resumeUrl} target="_blank" rel="noopener noreferrer">
-                <Eye className="w-5 h-5 mr-2" />
+                <Eye className="w-6 h-6 mr-3" />
                 View Resume
               </a>
             </Button>
@@ -182,24 +207,36 @@ const Resume = () => {
         </Card>
       </AnimatedSection>
 
-      <AnimatedSection delay={300}>
-        <Card className="glass-card border-primary/20 p-6">
-          <div className="flex items-start space-x-4">
-            <FileText className="w-6 h-6 text-primary flex-shrink-0 mt-1 neon-glow" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground mb-2">Resume Card</h3>
-              <div className="space-y-1 text-sm text-foreground/70">
-                <p>• Professional summary with contact information</p>
-                <p>• Detailed education and coursework</p>
-                <p>• Complete project portfolio with technical descriptions</p>
-                <p>• Skills matrix with proficiency levels</p>
-                <p>• Certifications and achievements</p>
-              </div>
+      {education.length > 0 && (
+        <AnimatedSection delay={300}>
+          <div className="px-2">
+            <h2 className="text-2xl font-bold mb-6 flex items-center text-gradient">
+              <GraduationCap className="w-6 h-6 mr-3 text-primary" />
+              Detailed Education
+            </h2>
+            <div className="grid gap-6">
+              {education.filter(e => !e.parent_id).sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)).map((edu) => (
+                <Card key={edu.id} className="glass-card border-primary/20 p-6 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)] transition-all">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground mb-1">{edu.degree}</h3>
+                      <p className="text-primary font-medium">{edu.institution}</p>
+                    </div>
+                    <div className="px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium w-fit">
+                      {edu.start_date} – {edu.end_date || "Present"}
+                    </div>
+                  </div>
+                  {edu.description && (
+                    <p className="mt-4 text-foreground/70 text-sm leading-relaxed border-l-2 border-primary/20 pl-4 italic">
+                      {edu.description}
+                    </p>
+                  )}
+                </Card>
+              ))}
             </div>
           </div>
-        </Card>
-      </AnimatedSection>
-
+        </AnimatedSection>
+      )}
     </section>
   );
 };

@@ -31,7 +31,6 @@ const App = () => (
               <Route path="/projects.html" element={<Index initialSection="projects" />} />
               <Route path="/certificates.html" element={<Index initialSection="certificates" />} />
               <Route path="/education.html" element={<Index initialSection="education" />} />
-              <Route path="/experience.html" element={<Navigate to="/" replace />} />
               <Route path="/contact.html" element={<Index initialSection="contact" />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/login" element={<AdminLogin />} />
